@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String?  @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions  Session[]
+
+  @@map("admins")
+}
+
+model Session {
+  id          Int      @id @default(autoincrement())
+  sessionId   String   @unique
+  adminId     Int
+  admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  lastActivity DateTime @default(now())
+  ipAddress   String?
+  userAgent   String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([adminId])
+  @@index([expiresAt])
+  @@index([isActive])
+  @@map("sessions")
+}
+
+model News {
+  id        Int      @id @default(autoincrement())
+  titleEN   String
+  titleRW   String
+  titleFR   String
+  excerptEN String   @db.Text
+  excerptRW String   @db.Text
+  excerptFR String   @db.Text
+  contentEN String   @db.Text
+  contentRW String   @db.Text
+  contentFR String   @db.Text
+  category  String
+  image     String?
+  video     String?
+  author    String
+  featured  Boolean  @default(false)
+  trending  Boolean  @default(false)
+  views     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  publishedAt DateTime?
+
+  @@index([category])
+  @@index([featured])
+  @@index([trending])
+  @@index([createdAt])
+  @@map("news")
+}
+
+model Advertisement {
+  id          Int      @id @default(autoincrement())
+  placement   String
+  title       String
+  mediaUrl    String?
+  linkUrl     String?
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([placement])
+  @@index([isPublished])
+  @@map("advertisements")
+}
+
+model Media {
+  id        Int      @id @default(autoincrement())
+  name      String
+  url       String
+  type      String   // 'image' | 'video'
+  size      Int?
+  mimeType  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@map("media")
+}
+
+model Announcement {
+  id          Int      @id @default(autoincrement())
+  titleEN     String
+  titleRW     String
+  titleFR     String
+  descriptionEN String @db.Text
+  descriptionRW String @db.Text
+  descriptionFR String @db.Text
+  image       String?
+  video       String?
+  file        String?
+  fileName    String?
+  fileType    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdAt])
+  @@map("announcements")
+}
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  username  String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([username])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("password_resets")
+}
