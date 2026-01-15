@@ -85,13 +85,23 @@ const NewsDetail = () => {
               </div>
             </div>
 
-            <div className="mb-8">
-              <img
-                src={article.image}
-                alt={localizedArticle.title}
-                className="w-full max-h-[600px] object-contain rounded-lg"
-              />
-            </div>
+            {(article.images && article.images.length > 0) ? (
+              <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {article.images.map((url, idx) => (
+                  <img key={idx} src={url} alt={localizedArticle.title} className="w-full max-h-[400px] object-cover rounded-lg" />
+                ))}
+              </div>
+            ) : (
+              <div className="mb-8">
+                {article.image && (
+                  <img
+                    src={article.image}
+                    alt={localizedArticle.title}
+                    className="w-full max-h-[600px] object-contain rounded-lg"
+                  />
+                )}
+              </div>
+            )}
 
             {article.video && (
               <div className="mb-8">
@@ -108,7 +118,7 @@ const NewsDetail = () => {
 
             <div className="prose prose-lg max-w-none">
               <p className="text-xl text-muted-foreground mb-6">{localizedArticle.excerpt}</p>
-              <div className="whitespace-pre-wrap">{localizedArticle.content}</div>
+              <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: localizedArticle.content }} />
             </div>
           </article>
         </div>

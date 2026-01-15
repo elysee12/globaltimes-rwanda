@@ -20,8 +20,10 @@ export interface NewsArticle {
     FR: string;
   };
   category: string;
-  image?: string;
-  video?: string;
+  image?: string; // legacy featured image or first of images
+  images?: string[]; // gallery
+  videos?: string[]; // embedded videos
+  video?: string; // legacy single video
   date: string;
   author: string;
   featured?: boolean;
@@ -29,31 +31,37 @@ export interface NewsArticle {
 }
 
 // Helper to convert API format to frontend format
-const apiToFrontend = (apiArticle: APINewsArticle): NewsArticle => ({
-  id: apiArticle.id,
-  title: {
-    EN: apiArticle.titleEN,
-    RW: apiArticle.titleRW,
-    FR: apiArticle.titleFR,
-  },
-  excerpt: {
-    EN: apiArticle.excerptEN,
-    RW: apiArticle.excerptRW,
-    FR: apiArticle.excerptFR,
-  },
-  content: {
-    EN: apiArticle.contentEN,
-    RW: apiArticle.contentRW,
-    FR: apiArticle.contentFR,
-  },
-  category: apiArticle.category,
-  image: apiArticle.image || undefined,
-  video: apiArticle.video || undefined,
-  date: apiArticle.createdAt,
-  author: apiArticle.author,
-  featured: apiArticle.featured,
-  trending: apiArticle.trending,
-});
+const apiToFrontend = (apiArticle: APINewsArticle): NewsArticle => {
+  const images = Array.isArray((apiArticle as any).images) ? (apiArticle as any).images as string[] : [];
+  const videos = Array.isArray((apiArticle as any).videos) ? (apiArticle as any).videos as string[] : [];
+  return {
+    id: apiArticle.id,
+    title: {
+      EN: apiArticle.titleEN,
+      RW: apiArticle.titleRW,
+      FR: apiArticle.titleFR,
+    },
+    excerpt: {
+      EN: apiArticle.excerptEN,
+      RW: apiArticle.excerptRW,
+      FR: apiArticle.excerptFR,
+    },
+    content: {
+      EN: apiArticle.contentEN,
+      RW: apiArticle.contentRW,
+      FR: apiArticle.contentFR,
+    },
+    category: apiArticle.category,
+    image: apiArticle.image || images[0] || undefined,
+    images,
+    videos,
+    video: apiArticle.video || undefined,
+    date: apiArticle.createdAt,
+    author: apiArticle.author,
+    featured: apiArticle.featured,
+    trending: apiArticle.trending,
+  };
+};
 
 // Helper to convert frontend format to API format
 const frontendToAPI = (article: NewsArticle): Omit<APINewsArticle, 'id' | 'createdAt' | 'updatedAt' | 'views' | 'publishedAt'> => ({
@@ -69,6 +77,8 @@ const frontendToAPI = (article: NewsArticle): Omit<APINewsArticle, 'id' | 'creat
   category: article.category,
   image: article.image,
   video: article.video,
+  images: article.images ?? [],
+  videos: article.videos ?? [],
   author: article.author,
   featured: article.featured ?? false,
   trending: article.trending ?? false,

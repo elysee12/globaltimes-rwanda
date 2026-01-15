@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class CreateNewsDto {
   @IsString()
@@ -40,6 +40,14 @@ export class CreateNewsDto {
   @IsOptional()
   @IsString()
   video?: string;
+
+  @IsOptional()
+  @IsArray()
+  images?: string[];
+
+  @IsOptional()
+  @IsArray()
+  videos?: string[];
 
   @IsString()
   author: string;
@@ -103,6 +111,14 @@ export class UpdateNewsDto {
   video?: string;
 
   @IsOptional()
+  @IsArray()
+  images?: string[];
+
+  @IsOptional()
+  @IsArray()
+  videos?: string[];
+
+  @IsOptional()
   @IsString()
   author?: string;
 
@@ -120,9 +136,12 @@ export class NewsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createNewsDto: CreateNewsDto) {
+    const { images, videos, ...rest } = createNewsDto as any;
     return this.prisma.news.create({
       data: {
-        ...createNewsDto,
+        ...rest,
+        images: images ?? [],
+        videos: videos ?? [],
         featured: createNewsDto.featured ?? false,
         trending: createNewsDto.trending ?? false,
         publishedAt: new Date(),
@@ -181,9 +200,15 @@ export class NewsService {
       throw new NotFoundException(`News with ID ${id} not found`);
     }
 
+    const { images, videos, ...rest } = updateNewsDto as any;
+
     return this.prisma.news.update({
       where: { id },
-      data: updateNewsDto,
+      data: {
+        ...rest,
+        ...(images !== undefined ? { images } : {}),
+        ...(videos !== undefined ? { videos } : {}),
+      },
     });
   }
 

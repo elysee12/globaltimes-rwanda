@@ -9,12 +9,14 @@ export interface NewsArticle {
   excerptEN: string;
   excerptRW: string;
   excerptFR: string;
-  contentEN: string;
+  contentEN: string; // rich HTML supported
   contentRW: string;
   contentFR: string;
   category: string;
-  image?: string;
-  video?: string;
+  image?: string; // legacy featured image
+  images?: string[]; // gallery
+  videos?: string[]; // embedded videos
+  video?: string; // legacy single video
   author: string;
   featured: boolean;
   trending: boolean;
@@ -523,6 +525,30 @@ export const uploadAPI = {
     }
 
     const response = await fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+      throw new Error(error.message || 'Upload failed');
+    }
+
+    return response.json();
+  },
+
+  uploadFiles: async (files: File[]): Promise<Array<{ url: string; filename: string }>> => {
+    const formData = new FormData();
+    for (const f of files) formData.append('files', f);
+
+    const token = getAuthToken();
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/upload/many`, {
       method: 'POST',
       headers,
       body: formData,

@@ -34,13 +34,15 @@ const ManageNews = () => {
     contentFR: "",
     category: "Politics",
     image: "",
+    images: [] as string[],
+    videos: [] as string[],
     video: "",
     author: "Admin",
     featured: false,
     trending: false,
   });
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
   const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [primaryLanguage, setPrimaryLanguage] = useState<'EN' | 'RW' | 'FR'>('EN');
@@ -49,6 +51,10 @@ const ManageNews = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const insertImageInputRef = useRef<HTMLInputElement>(null);
+  const insertVideoInputRef = useRef<HTMLInputElement>(null);
+  const [insertTargetLanguage, setInsertTargetLanguage] = useState<'EN' | 'RW' | 'FR' | null>(null);
+  const [insertType, setInsertType] = useState<'image' | 'video' | null>(null);
 
   const languageLabels: Record<'EN' | 'RW' | 'FR', string> = {
     EN: "English",
@@ -74,17 +80,21 @@ const ManageNews = () => {
   }, [primaryLanguage, targetLanguage, availableTargetLanguages]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast.error("Please select a valid image file");
-        return;
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length) {
+      const valid: File[] = [];
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) {
+          toast.error(`Invalid file ${file.name}. Only images allowed.`);
+          continue;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`Image ${file.name} exceeds 5MB`);
+          continue;
+        }
+        valid.push(file);
       }
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image size must be less than 5MB");
-        return;
-      }
-      setSelectedImageFile(file);
+      setSelectedImageFiles(valid);
     }
   };
 
@@ -110,15 +120,20 @@ const ManageNews = () => {
     try {
       let imageUrl = formData.image;
       let videoUrl = formData.video;
+      let galleryUrls = formData.images ?? [];
+      let videosArr = formData.videos ?? [];
 
-      if (selectedImageFile) {
-        const uploaded = await uploadAPI.uploadFile(selectedImageFile);
-        imageUrl = uploaded.url;
+      if (selectedImageFiles && selectedImageFiles.length > 0) {
+        const uploadedMany = await uploadAPI.uploadFiles(selectedImageFiles);
+        const urls = uploadedMany.map(u => u.url);
+        galleryUrls = [...galleryUrls, ...urls];
+        if (!imageUrl) imageUrl = urls[0];
       }
 
       if (selectedVideoFile) {
         const uploaded = await uploadAPI.uploadFile(selectedVideoFile);
         videoUrl = uploaded.url;
+        videosArr = [...videosArr, uploaded.url];
       }
       
       const article = {
@@ -128,6 +143,8 @@ const ManageNews = () => {
         content: { EN: formData.contentEN, RW: formData.contentRW, FR: formData.contentFR },
         category: formData.category,
         image: imageUrl,
+        images: galleryUrls,
+        videos: videosArr,
         video: videoUrl,
         date: new Date().toISOString(),
         author: formData.author,
@@ -156,10 +173,10 @@ const ManageNews = () => {
       titleEN: "", titleRW: "", titleFR: "",
       excerptEN: "", excerptRW: "", excerptFR: "",
       contentEN: "", contentRW: "", contentFR: "",
-      category: "Politics", image: "", video: "", author: "Admin", featured: false, trending: false
+      category: "Politics", image: "", images: [], videos: [], video: "", author: "Admin", featured: false, trending: false
     });
     setEditingId(null);
-    setSelectedImageFile(null);
+    setSelectedImageFiles([]);
     setSelectedVideoFile(null);
     if (imageInputRef.current) imageInputRef.current.value = '';
     if (videoInputRef.current) videoInputRef.current.value = '';
@@ -179,7 +196,9 @@ const ManageNews = () => {
         contentRW: article.content.RW,
         contentFR: article.content.FR,
         category: article.category,
-        image: article.image,
+        image: article.image || "",
+        images: article.images || [],
+        videos: article.videos || [],
         video: article.video || "",
         author: article.author,
         featured: article.featured || false,
@@ -296,9 +315,16 @@ const ManageNews = () => {
                       <Label>Excerpt (English)</Label>
                       <Textarea value={formData.excerptEN} onChange={(e) => setFormData({...formData, excerptEN: e.target.value})} required placeholder="Enter excerpt in English" rows={3} />
                     </div>
-                    <div>
-                      <Label>Content (English)</Label>
-                      <Textarea value={formData.contentEN} onChange={(e) => setFormData({...formData, contentEN: e.target.value})} rows={8} required placeholder="Enter full content in English" />
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Button type="button" variant="secondary" size="sm" onClick={() => { setInsertTargetLanguage('EN'); setInsertType('image'); insertImageInputRef.current?.click(); }}>
+                          <Upload className="h-4 w-4 mr-1" /> Insert Image
+                        </Button>
+                        <Button type="button" variant="secondary" size="sm" onClick={() => { setInsertTargetLanguage('EN'); setInsertType('video'); insertVideoInputRef.current?.click(); }}>
+                          <Upload className="h-4 w-4 mr-1" /> Insert Video
+                        </Button>
+                      </div>
+                      <Textarea value={formData.contentEN} onChange={(e) => setFormData({...formData, contentEN: e.target.value})} rows={8} required placeholder="Enter full content in English (HTML supported)" />
                     </div>
                   </TabsContent>
 
@@ -311,9 +337,16 @@ const ManageNews = () => {
                       <Label>Excerpt (Kinyarwanda)</Label>
                       <Textarea value={formData.excerptRW} onChange={(e) => setFormData({...formData, excerptRW: e.target.value})} required placeholder="Andika incamake mu Kinyarwanda" rows={3} />
                     </div>
-                    <div>
-                      <Label>Content (Kinyarwanda)</Label>
-                      <Textarea value={formData.contentRW} onChange={(e) => setFormData({...formData, contentRW: e.target.value})} rows={8} required placeholder="Andika inyandiko yuzuye mu Kinyarwanda" />
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Button type="button" variant="secondary" size="sm" onClick={() => { setInsertTargetLanguage('RW'); setInsertType('image'); insertImageInputRef.current?.click(); }}>
+                          <Upload className="h-4 w-4 mr-1" /> Shyiramo Ifoto
+                        </Button>
+                        <Button type="button" variant="secondary" size="sm" onClick={() => { setInsertTargetLanguage('RW'); setInsertType('video'); insertVideoInputRef.current?.click(); }}>
+                          <Upload className="h-4 w-4 mr-1" /> Shyiramo Video
+                        </Button>
+                      </div>
+                      <Textarea value={formData.contentRW} onChange={(e) => setFormData({...formData, contentRW: e.target.value})} rows={8} required placeholder="Andika inyandiko yuzuye mu Kinyarwanda (HTML biremewe)" />
                     </div>
                   </TabsContent>
 
@@ -326,9 +359,16 @@ const ManageNews = () => {
                       <Label>Excerpt (French)</Label>
                       <Textarea value={formData.excerptFR} onChange={(e) => setFormData({...formData, excerptFR: e.target.value})} required placeholder="Entrez l'extrait en français" rows={3} />
                     </div>
-                    <div>
-                      <Label>Content (French)</Label>
-                      <Textarea value={formData.contentFR} onChange={(e) => setFormData({...formData, contentFR: e.target.value})} rows={8} required placeholder="Entrez le contenu complet en français" />
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Button type="button" variant="secondary" size="sm" onClick={() => { setInsertTargetLanguage('FR'); setInsertType('image'); insertImageInputRef.current?.click(); }}>
+                          <Upload className="h-4 w-4 mr-1" /> Insérer une image
+                        </Button>
+                        <Button type="button" variant="secondary" size="sm" onClick={() => { setInsertTargetLanguage('FR'); setInsertType('video'); insertVideoInputRef.current?.click(); }}>
+                          <Upload className="h-4 w-4 mr-1" /> Insérer une vidéo
+                        </Button>
+                      </div>
+                      <Textarea value={formData.contentFR} onChange={(e) => setFormData({...formData, contentFR: e.target.value})} rows={8} required placeholder="Entrez le contenu complet en français (HTML pris en charge)" />
                     </div>
                   </TabsContent>
                 </Tabs>
@@ -365,9 +405,18 @@ const ManageNews = () => {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <Label>Featured Image</Label>
-                      <Input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageSelect} />
-                      {selectedImageFile && <p className="text-sm text-muted-foreground mt-1">Selected: {selectedImageFile.name}</p>}
-                      {formData.image && !selectedImageFile && <img src={formData.image} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded" />}
+                      <Input ref={imageInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} />
+                      {selectedImageFiles.length > 0 && (
+                        <p className="text-sm text-muted-foreground mt-1">Selected: {selectedImageFiles.map(f => f.name).join(', ')}</p>
+                      )}
+                      {formData.image && selectedImageFiles.length === 0 && <img src={formData.image} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded" />}
+                      {formData.images && formData.images.length > 0 && (
+                        <div className="mt-2 grid grid-cols-4 gap-2">
+                          {formData.images.map((url, idx) => (
+                            <img key={idx} src={url} className="h-16 w-16 object-cover rounded" />
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <Label>Video (Optional)</Label>
@@ -425,6 +474,47 @@ const ManageNews = () => {
                     When you run translation, the Title, Excerpt, and Content fields for {languageLabels[targetLanguage]} will be updated with the translated text. Review and adjust the wording if needed.
                   </p>
                 </div>
+              <input ref={insertImageInputRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file || !insertTargetLanguage) return;
+                try {
+                  setIsUploading(true);
+                  const uploaded = await uploadAPI.uploadFile(file);
+                  const tag = `<img src="${uploaded.url}" alt="" />`;
+                  if (insertTargetLanguage === 'EN') setFormData(prev => ({ ...prev, contentEN: `${prev.contentEN}\n${tag}` }));
+                  if (insertTargetLanguage === 'RW') setFormData(prev => ({ ...prev, contentRW: `${prev.contentRW}\n${tag}` }));
+                  if (insertTargetLanguage === 'FR') setFormData(prev => ({ ...prev, contentFR: `${prev.contentFR}\n${tag}` }));
+                  toast.success('Image inserted into content');
+                } catch {
+                  toast.error('Failed to upload image');
+                } finally {
+                  setIsUploading(false);
+                  if (insertImageInputRef.current) insertImageInputRef.current.value = '';
+                  setInsertTargetLanguage(null);
+                  setInsertType(null);
+                }
+              }} />
+              <input ref={insertVideoInputRef} type="file" accept="video/*" className="hidden" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file || !insertTargetLanguage) return;
+                try {
+                  setIsUploading(true);
+                  const uploaded = await uploadAPI.uploadFile(file);
+                  const tag = `<video controls src="${uploaded.url}"></video>`;
+                  if (insertTargetLanguage === 'EN') setFormData(prev => ({ ...prev, contentEN: `${prev.contentEN}\n${tag}` }));
+                  if (insertTargetLanguage === 'RW') setFormData(prev => ({ ...prev, contentRW: `${prev.contentRW}\n${tag}` }));
+                  if (insertTargetLanguage === 'FR') setFormData(prev => ({ ...prev, contentFR: `${prev.contentFR}\n${tag}` }));
+                  setFormData(prev => ({ ...prev, videos: [...(prev.videos || []), uploaded.url] }));
+                  toast.success('Video inserted into content');
+                } catch {
+                  toast.error('Failed to upload video');
+                } finally {
+                  setIsUploading(false);
+                  if (insertVideoInputRef.current) insertVideoInputRef.current.value = '';
+                  setInsertTargetLanguage(null);
+                  setInsertType(null);
+                }
+              }} />
               </form>
             </CardContent>
           </Card>

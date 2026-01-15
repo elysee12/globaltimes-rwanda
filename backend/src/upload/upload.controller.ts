@@ -2,11 +2,12 @@ import {
   Controller,
   Post,
   UploadedFile,
+  UploadedFiles,
   UseInterceptors,
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 interface UploadedMulterFile {
@@ -39,5 +40,23 @@ export class UploadController {
       size: file.size,
       url: `${baseUrl}/uploads/${file.filename}`,
     };
+  }
+
+  @Post('many')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FilesInterceptor('files'))
+  uploadFiles(@UploadedFiles() files: UploadedMulterFile[]) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files provided');
+    }
+
+    const baseUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+    return files.map((file) => ({
+      filename: file.filename,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      url: `${baseUrl}/uploads/${file.filename}`,
+    }));
   }
 }
