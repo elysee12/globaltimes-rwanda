@@ -14,7 +14,62 @@ const languageCodes: Record<Language, string> = {
 // Translation cache to avoid repeated API calls
 const translationCache = new Map<string, string>();
 
+// Placeholder prefix for protecting HTML tags during translation
+const HTML_PLACEHOLDER_PREFIX = '__HTML_TAG_PLACEHOLDER_';
+
+/**
+ * Protects HTML tags (especially img tags) by replacing them with placeholders
+ * This prevents translation services from corrupting HTML structure
+ * 
+ * @param html - HTML content string
+ * @returns Object with protected HTML and placeholder map
+ */
+function protectHtmlTags(html: string): { protectedHtml: string; placeholders: Map<string, string> } {
+  const placeholders = new Map<string, string>();
+  let counter = 0;
+
+  // Protect img tags
+  let protectedHtml = html.replace(/<img[^>]*>/gi, (match) => {
+    const placeholder = `${HTML_PLACEHOLDER_PREFIX}IMG_${counter++}__`;
+    placeholders.set(placeholder, match);
+    return placeholder;
+  });
+
+  // Protect other common HTML tags that might be corrupted
+  protectedHtml = protectedHtml.replace(/<video[^>]*>.*?<\/video>/gis, (match) => {
+    const placeholder = `${HTML_PLACEHOLDER_PREFIX}VIDEO_${counter++}__`;
+    placeholders.set(placeholder, match);
+    return placeholder;
+  });
+
+  protectedHtml = protectedHtml.replace(/<iframe[^>]*>.*?<\/iframe>/gis, (match) => {
+    const placeholder = `${HTML_PLACEHOLDER_PREFIX}IFRAME_${counter++}__`;
+    placeholders.set(placeholder, match);
+    return placeholder;
+  });
+
+  return { protectedHtml, placeholders };
+}
+
+/**
+ * Restores HTML tags from placeholders after translation
+ * 
+ * @param translatedHtml - Translated HTML with placeholders
+ * @param placeholders - Map of placeholder to original HTML tag
+ * @returns HTML with restored tags
+ */
+function restoreHtmlTags(translatedHtml: string, placeholders: Map<string, string>): string {
+  let restored = translatedHtml;
+  placeholders.forEach((originalTag, placeholder) => {
+    // Replace placeholder with original tag (use global replace to handle multiple instances)
+    const regex = new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    restored = restored.replace(regex, originalTag);
+  });
+  return restored;
+}
+
 // Translate text using Google Translate API
+// For HTML content, this preserves HTML tags (especially img tags) during translation
 export const translateText = async (
   text: string,
   sourceLang: Language,
@@ -24,14 +79,28 @@ export const translateText = async (
     return text;
   }
 
+  // Use original text for cache key to ensure consistency
   const cacheKey = `${sourceLang}-${targetLang}-${text}`;
   if (translationCache.has(cacheKey)) {
     return translationCache.get(cacheKey)!;
   }
 
+  // Check if the text contains HTML tags (especially img tags)
+  const hasHtmlTags = /<img[^>]*>|<video[^>]*>|<iframe[^>]*>/i.test(text);
+  
+  let textToTranslate = text;
+  let placeholders: Map<string, string> | null = null;
+
+  // Protect HTML tags before translation
+  if (hasHtmlTags) {
+    const protectedResult = protectHtmlTags(text);
+    textToTranslate = protectedResult.protectedHtml;
+    placeholders = protectedResult.placeholders;
+  }
+
   try {
     const response = await fetch(
-      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${languageCodes[sourceLang]}&tl=${languageCodes[targetLang]}&dt=t&q=${encodeURIComponent(text)}`
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${languageCodes[sourceLang]}&tl=${languageCodes[targetLang]}&dt=t&q=${encodeURIComponent(textToTranslate)}`
     );
     
     if (!response.ok) {
@@ -40,9 +109,14 @@ export const translateText = async (
     }
 
     const data = await response.json();
-    const translated = data?.[0]?.map((item: any[]) => item[0]).join('') || text;
+    let translated = data?.[0]?.map((item: any[]) => item[0]).join('') || textToTranslate;
     
-    // Cache the translation
+    // Restore HTML tags after translation
+    if (placeholders) {
+      translated = restoreHtmlTags(translated, placeholders);
+    }
+    
+    // Cache the final translated result (with HTML restored) using original text as key
     translationCache.set(cacheKey, translated);
     return translated;
   } catch (error) {

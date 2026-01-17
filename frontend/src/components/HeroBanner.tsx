@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNews } from "@/contexts/NewsContext";
 import { getTranslatedCategory, getLocalizedArticleFieldsAsync } from "@/lib/localization";
+import { normalizeImageUrl } from "@/lib/image-utils";
 
 const HeroBanner = () => {
   const { language, t } = useLanguage();
@@ -81,7 +82,7 @@ const HeroBanner = () => {
                 style={{ height: 420 }}
               >
                 <img
-                  src={featured.image}
+                  src={normalizeImageUrl(featured.image)}
                   alt={translatedHeroNews.get(String(featured.id))?.title || ''}
                   className="h-full w-full object-cover bg-black"
                 />
@@ -115,7 +116,7 @@ const HeroBanner = () => {
                 >
                   <div className="relative w-32 h-24 shrink-0 overflow-hidden rounded">
                     <img
-                      src={item.image}
+                      src={normalizeImageUrl(item.image)}
                       alt={translatedHeroNews.get(String(item.id))?.title || ''}
                       className="h-full w-full object-cover bg-black"
                     />

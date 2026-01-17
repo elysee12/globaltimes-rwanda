@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Clock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getTranslatedCategory } from "@/lib/localization";
+import { normalizeImageUrl } from "@/lib/image-utils";
 
 interface NewsCardProps {
   id: string;
@@ -25,7 +26,7 @@ const NewsCard = ({ id, title, excerpt, category, image, date, featured = false,
       >
         <div className="relative h-72 overflow-hidden">
           <img
-            src={image}
+            src={normalizeImageUrl(image)}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
@@ -56,7 +57,7 @@ const NewsCard = ({ id, title, excerpt, category, image, date, featured = false,
     >
       <div className="relative w-32 h-32 flex-shrink-0 overflow-hidden rounded-lg">
         <img
-          src={image}
+          src={normalizeImageUrl(image)}
           alt={title}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />

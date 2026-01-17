@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useNews } from "@/contexts/NewsContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocalizedArticleFieldsAsync, getLocalizedArticleFields, getTranslatedCategory } from "@/lib/localization";
+import { normalizeImageUrl, normalizeImageUrls, normalizeHtmlImageUrls } from "@/lib/image-utils";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -29,12 +30,22 @@ const NewsDetail = () => {
       setLoadingTranslation(true);
       try {
         const translated = await getLocalizedArticleFieldsAsync(article, language);
-        setLocalizedArticle(translated);
+        // Normalize image URLs in the content HTML
+        const normalizedContent = normalizeHtmlImageUrls(translated.content);
+        setLocalizedArticle({
+          ...translated,
+          content: normalizedContent,
+        });
       } catch (error) {
         console.warn('Translation failed:', error);
         // Fallback to sync version if translation fails
         const sync = getLocalizedArticleFields(article, language);
-        setLocalizedArticle(sync);
+        // Normalize image URLs in the content HTML
+        const normalizedContent = normalizeHtmlImageUrls(sync.content);
+        setLocalizedArticle({
+          ...sync,
+          content: normalizedContent,
+        });
       } finally {
         setLoadingTranslation(false);
       }
@@ -87,7 +98,7 @@ const NewsDetail = () => {
 
             {(article.images && article.images.length > 0) ? (
               <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {article.images.map((url, idx) => (
+                {normalizeImageUrls(article.images).map((url, idx) => (
                   <img key={idx} src={url} alt={localizedArticle.title} className="w-full max-h-[400px] object-cover rounded-lg" />
                 ))}
               </div>
@@ -95,7 +106,7 @@ const NewsDetail = () => {
               <div className="mb-8">
                 {article.image && (
                   <img
-                    src={article.image}
+                    src={normalizeImageUrl(article.image)}
                     alt={localizedArticle.title}
                     className="w-full max-h-[600px] object-contain rounded-lg"
                   />
@@ -108,9 +119,9 @@ const NewsDetail = () => {
                 <video
                   controls
                   className="w-full rounded-lg"
-                  poster={article.image}
+                  poster={normalizeImageUrl(article.image)}
                 >
-                  <source src={article.video} type="video/mp4" />
+                  <source src={normalizeImageUrl(article.video)} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
               </div>
@@ -118,7 +129,10 @@ const NewsDetail = () => {
 
             <div className="prose prose-lg max-w-none">
               <p className="text-xl text-muted-foreground mb-6">{localizedArticle.excerpt}</p>
-              <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: localizedArticle.content }} />
+              <div 
+                className="prose max-w-none [&_img]:max-w-[300px] [&_img]:h-auto [&_img]:my-2 [&_img]:rounded"
+                dangerouslySetInnerHTML={{ __html: localizedArticle.content }} 
+              />
             </div>
           </article>
         </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { announcementsAPI, Announcement } from "@/lib/api";
+import { normalizeImageUrl } from "@/lib/image-utils";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -124,7 +125,7 @@ const AnnouncementDetail = () => {
             {announcement.image && (
               <div className="mb-8">
                 <img
-                  src={announcement.image}
+                  src={normalizeImageUrl(announcement.image)}
                   alt={getFallbackTitle()}
                   className="w-full h-[400px] object-cover rounded-lg"
                 />
@@ -136,9 +137,9 @@ const AnnouncementDetail = () => {
                 <video
                   controls
                   className="w-full rounded-lg"
-                  poster={announcement.image}
+                  poster={normalizeImageUrl(announcement.image)}
                 >
-                  <source src={announcement.video} type="video/mp4" />
+                  <source src={normalizeImageUrl(announcement.video)} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
               </div>
@@ -183,7 +184,7 @@ const AnnouncementDetail = () => {
                       ) ? (
                     <div className="mt-4">
                       <img
-                        src={announcement.file}
+                        src={normalizeImageUrl(announcement.file)}
                         alt={announcement.fileName || "Attached image"}
                         className="w-full max-h-[600px] object-contain rounded"
                       />
