@@ -130,7 +130,19 @@ const NewsDetail = () => {
             <div className="prose prose-lg max-w-none">
               <p className="text-xl text-muted-foreground mb-6">{localizedArticle.excerpt}</p>
               <div 
-                className="prose max-w-none [&_img]:max-w-[300px] [&_img]:h-auto [&_img]:my-2 [&_img]:rounded"
+                className="prose max-w-none 
+                  font-serif 
+                  text-2xl leading-relaxed
+                  text-center
+                  [&_p]:mb-6 [&_p]:text-foreground [&_p]:text-center [&_p]:text-justify [&_p]:text-2xl
+                  [&_h1]:mb-4 [&_h1]:mt-8 [&_h1]:text-4xl [&_h1]:font-bold [&_h1]:text-center
+                  [&_h2]:mb-4 [&_h2]:mt-6 [&_h2]:text-3xl [&_h2]:font-bold [&_h2]:text-center
+                  [&_h3]:mb-3 [&_h3]:mt-5 [&_h3]:text-2xl [&_h3]:font-semibold [&_h3]:text-center
+                  [&_ul]:mb-6 [&_ul]:ml-6 [&_ul]:list-disc [&_ul]:text-left [&_ul]:text-2xl
+                  [&_ol]:mb-6 [&_ol]:ml-6 [&_ol]:list-decimal [&_ol]:text-left [&_ol]:text-2xl
+                  [&_li]:mb-2 [&_li]:text-2xl
+                  [&_blockquote]:mb-6 [&_blockquote]:pl-4 [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:italic [&_blockquote]:text-left [&_blockquote]:text-2xl
+                  [&_img]:w-full [&_img]:max-w-full [&_img]:h-auto [&_img]:my-6 [&_img]:rounded [&_img]:object-contain"
                 dangerouslySetInnerHTML={{ __html: localizedArticle.content }} 
               />
             </div>

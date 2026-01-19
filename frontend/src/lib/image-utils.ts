@@ -91,22 +91,19 @@ export const normalizeHtmlImageUrls = (html: string): string => {
         ` src="${normalizedUrl}"`
       );
 
-      // Add or update style attribute to make images smaller
+      // Add or update style attribute for images (full width, centered)
       const styleMatch = updatedAttributes.match(/\s+style=["']([^"']*)["']/i);
-      const maxWidthStyle = 'max-width: 300px; height: auto; margin: 8px 0; border-radius: 4px;';
+      const imageStyle = 'width: 100%; max-width: 100%; height: auto; margin: 24px 0; border-radius: 4px; display: block;';
       
       if (styleMatch) {
-        // Append to existing style if it doesn't already have max-width
-        const existingStyle = styleMatch[1];
-        if (!existingStyle.includes('max-width')) {
-          updatedAttributes = updatedAttributes.replace(
-            /\s+style=["'][^"']*["']/i,
-            ` style="${existingStyle}; ${maxWidthStyle}"`
-          );
-        }
+        // Replace existing style with new one
+        updatedAttributes = updatedAttributes.replace(
+          /\s+style=["'][^"']*["']/i,
+          ` style="${imageStyle}"`
+        );
       } else {
         // Add new style attribute
-        updatedAttributes += ` style="${maxWidthStyle}"`;
+        updatedAttributes += ` style="${imageStyle}"`;
       }
 
       // Add class for additional styling if not present
