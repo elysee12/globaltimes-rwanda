@@ -122,6 +122,9 @@ export class UpdateNewsDto {
   videos?: string[];
 
   @IsOptional()
+  imageCaptions?: Record<string, { EN?: string; RW?: string; FR?: string }>;
+
+  @IsOptional()
   @IsString()
   author?: string;
 

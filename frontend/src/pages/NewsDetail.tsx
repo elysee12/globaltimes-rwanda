@@ -30,10 +30,14 @@ const NewsDetail = () => {
       setLoadingTranslation(true);
       try {
         const translated = await getLocalizedArticleFieldsAsync(article, language);
+        console.log('NewsDetail: Article imageCaptions:', article.imageCaptions);
+        console.log('NewsDetail: Content before processing:', translated.content.substring(0, 200));
         // Normalize image URLs in the content HTML
         let normalizedContent = normalizeHtmlImageUrls(translated.content);
+        console.log('NewsDetail: Content after normalizeHtmlImageUrls:', normalizedContent.substring(0, 200));
         // Add captions to images
         normalizedContent = addImageCaptions(normalizedContent, article.imageCaptions, language);
+        console.log('NewsDetail: Content after addImageCaptions:', normalizedContent.substring(0, 300));
         setLocalizedArticle({
           ...translated,
           content: normalizedContent,
@@ -42,6 +46,7 @@ const NewsDetail = () => {
         console.warn('Translation failed:', error);
         // Fallback to sync version if translation fails
         const sync = getLocalizedArticleFields(article, language);
+        console.log('NewsDetail: Fallback - Article imageCaptions:', article.imageCaptions);
         // Normalize image URLs in the content HTML
         let normalizedContent = normalizeHtmlImageUrls(sync.content);
         // Add captions to images

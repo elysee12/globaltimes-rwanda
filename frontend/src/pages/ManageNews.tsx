@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useNews } from "@/contexts/NewsContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocalizedArticleFields } from "@/lib/localization";
+import { normalizeImageUrl } from "@/lib/image-utils";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -151,12 +152,15 @@ const ManageNews = () => {
         images: galleryUrls,
         videos: videosArr,
         video: videoUrl,
-        imageCaptions: formData.imageCaptions,
+        imageCaptions: formData.imageCaptions || {},
         date: new Date().toISOString(),
         author: formData.author,
         featured: formData.featured,
         trending: formData.trending,
       };
+
+      console.log('ManageNews: Saving article with imageCaptions:', article.imageCaptions);
+      console.log('ManageNews: ImageCaptions keys:', Object.keys(article.imageCaptions || {}));
 
       if (editingId !== null) {
         updateArticle(editingId, article);
@@ -191,6 +195,15 @@ const ManageNews = () => {
   const handleEdit = (id: number) => {
     const article = articles.find(a => a.id === id);
     if (article) {
+      // Normalize image caption keys to ensure consistent matching
+      const normalizedCaptions: Record<string, { EN?: string; RW?: string; FR?: string }> = {};
+      if (article.imageCaptions) {
+        Object.entries(article.imageCaptions).forEach(([url, captions]) => {
+          const normalizedUrl = normalizeImageUrl(url);
+          normalizedCaptions[normalizedUrl] = captions;
+        });
+      }
+      
       setFormData({
         titleEN: article.title.EN,
         titleRW: article.title.RW,
@@ -206,7 +219,7 @@ const ManageNews = () => {
       images: article.images || [],
       videos: article.videos || [],
       video: article.video || "",
-      imageCaptions: article.imageCaptions || {},
+      imageCaptions: normalizedCaptions,
       author: article.author,
       featured: article.featured || false,
       trending: article.trending || false
@@ -571,6 +584,9 @@ const ManageNews = () => {
                 <Button onClick={() => {
                   if (!pendingImageUrl || !insertTargetLanguage) return;
                   
+                  // Normalize the URL to ensure consistent key matching
+                  const normalizedUrl = normalizeImageUrl(pendingImageUrl);
+                  
                   // Store captions
                   const captions: { EN?: string; RW?: string; FR?: string } = {};
                   if (captionInputs.EN.trim()) captions.EN = captionInputs.EN.trim();
@@ -582,13 +598,13 @@ const ManageNews = () => {
                       ...prev,
                       imageCaptions: {
                         ...prev.imageCaptions,
-                        [pendingImageUrl]: captions
+                        [normalizedUrl]: captions
                       }
                     }));
                   }
                   
-                  // Insert image tag
-                  const tag = `<img src="${pendingImageUrl}" alt="" />`;
+                  // Insert image tag with normalized URL for consistency
+                  const tag = `<img src="${normalizedUrl}" alt="" />`;
                   if (insertTargetLanguage === 'EN') {
                     setFormData(prev => ({ ...prev, contentEN: `${prev.contentEN}\n${tag}` }));
                   }

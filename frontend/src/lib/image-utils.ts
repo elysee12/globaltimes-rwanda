@@ -129,28 +129,75 @@ export const addImageCaptions = (
   imageCaptions?: Record<string, { EN?: string; RW?: string; FR?: string }>,
   language: 'EN' | 'RW' | 'FR' = 'EN'
 ): string => {
-  if (!html || typeof html !== 'string' || !imageCaptions) {
+  if (!html || typeof html !== 'string') {
+    return html;
+  }
+  
+  if (!imageCaptions || Object.keys(imageCaptions).length === 0) {
+    console.log('addImageCaptions: No imageCaptions provided or empty');
     return html;
   }
 
+  console.log('addImageCaptions: Processing HTML with', Object.keys(imageCaptions).length, 'caption keys');
+  console.log('addImageCaptions: Caption keys:', Object.keys(imageCaptions));
+  console.log('addImageCaptions: Language:', language);
+
   // Replace img tags with img + caption
+  // Match img tags that are not already inside figure tags
   return html.replace(
     /<img([^>]*)>/gi,
-    (match, attributes) => {
-      // Extract src attribute
-      const srcMatch = attributes.match(/\s+src=["']([^"']+)["']/i);
+    (match, attributes, offset) => {
+      // Check if this img tag is already inside a figure tag
+      const beforeMatch = html.substring(Math.max(0, offset - 200), offset);
+      if (beforeMatch.includes('<figure') && !beforeMatch.includes('</figure>')) {
+        console.log('addImageCaptions: Skipping img tag already inside figure');
+        return match;
+      }
+      
+      // Extract src attribute - handle both quoted and unquoted attributes
+      const srcMatch = attributes.match(/\s+src\s*=\s*["']?([^"'\s>]+)["']?/i);
       if (!srcMatch) {
+        console.log('addImageCaptions: No src attribute found in img tag');
         return match; // Return original if no src found
       }
 
       const url = srcMatch[1];
       const normalizedUrl = normalizeImageUrl(url);
       
-      // Find matching caption (try normalized URL first, then original)
+      console.log('addImageCaptions: Found img tag with URL:', url);
+      console.log('addImageCaptions: Normalized URL:', normalizedUrl);
+      
+      // Find matching caption - try multiple URL variations for robust matching
       let caption: string | undefined;
-      const captionData = imageCaptions[normalizedUrl] || imageCaptions[url];
+      let captionData = imageCaptions[normalizedUrl] || imageCaptions[url];
+      
+      // If not found, try matching against all keys (normalize each key and compare)
+      if (!captionData) {
+        for (const [key, value] of Object.entries(imageCaptions)) {
+          const normalizedKey = normalizeImageUrl(key);
+          // Try multiple matching strategies
+          if (
+            normalizedKey === normalizedUrl || 
+            normalizedKey === url || 
+            key === normalizedUrl || 
+            key === url ||
+            normalizedKey.replace(/\/$/, '') === normalizedUrl.replace(/\/$/, '') ||
+            key.replace(/\/$/, '') === url.replace(/\/$/, '')
+          ) {
+            console.log('addImageCaptions: Found matching caption for key:', key);
+            captionData = value;
+            break;
+          }
+        }
+      } else {
+        console.log('addImageCaptions: Found caption data directly');
+      }
+      
       if (captionData) {
         caption = captionData[language] || captionData.EN || captionData.RW || captionData.FR;
+        console.log('addImageCaptions: Caption text:', caption);
+      } else {
+        console.log('addImageCaptions: No caption found for URL:', url);
       }
 
       // If no caption found, return original img tag
@@ -159,7 +206,9 @@ export const addImageCaptions = (
       }
 
       // Return img tag wrapped with figure and figcaption
-      return `<figure class="image-with-caption">${match}<figcaption class="image-caption text-sm text-muted-foreground mt-2 text-center italic">${caption}</figcaption></figure>`;
+      const result = `<figure class="image-with-caption">${match}<figcaption class="image-caption text-sm text-muted-foreground mt-2 text-center italic">${caption}</figcaption></figure>`;
+      console.log('addImageCaptions: Returning wrapped img with caption');
+      return result;
     }
   );
 };
