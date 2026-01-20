@@ -137,8 +137,8 @@ const NewsDetail = () => {
                 className="prose max-w-none 
                   font-serif 
                   text-2xl leading-relaxed
-                  text-center
-                  [&_p]:mb-6 [&_p]:text-foreground [&_p]:text-center [&_p]:text-justify [&_p]:text-2xl
+                  text-justify
+                  [&_p]:mb-6 [&_p]:text-foreground [&_p]:text-justify [&_p]:text-2xl
                   [&_h1]:mb-4 [&_h1]:mt-8 [&_h1]:text-4xl [&_h1]:font-bold [&_h1]:text-center
                   [&_h2]:mb-4 [&_h2]:mt-6 [&_h2]:text-3xl [&_h2]:font-bold [&_h2]:text-center
                   [&_h3]:mb-3 [&_h3]:mt-5 [&_h3]:text-2xl [&_h3]:font-semibold [&_h3]:text-center
