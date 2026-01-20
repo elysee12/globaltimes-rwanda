@@ -40,28 +40,29 @@ model Session {
 }
 
 model News {
-  id         Int       @id @default(autoincrement())
-  titleEN    String
-  titleRW    String
-  titleFR    String
-  excerptEN  String    @db.Text
-  excerptRW  String    @db.Text
-  excerptFR  String    @db.Text
-  contentEN  String    @db.LongText // allow rich HTML/JSON
-  contentRW  String    @db.LongText
-  contentFR  String    @db.LongText
-  category   String
-  image      String?   // legacy single image
-  images     Json?     // gallery of images (URLs) stored as JSON array
-  videos     Json?     // list of embedded video URLs stored as JSON array
-  video      String?   // legacy single video
-  author     String
-  featured   Boolean   @default(false)
-  trending   Boolean   @default(false)
-  views      Int       @default(0)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  publishedAt DateTime?
+  id            Int       @id @default(autoincrement())
+  titleEN       String
+  titleRW       String
+  titleFR       String
+  excerptEN     String    @db.Text
+  excerptRW     String    @db.Text
+  excerptFR     String    @db.Text
+  contentEN     String    @db.LongText // allow rich HTML/JSON
+  contentRW     String    @db.LongText
+  contentFR     String    @db.LongText
+  category      String
+  image         String?   // legacy single image
+  images        Json?     // gallery of images (URLs) stored as JSON array
+  videos        Json?     // list of embedded video URLs stored as JSON array
+  video         String?   // legacy single video
+  imageCaptions Json?     // map of image URLs to captions: { "url": { "EN": "...", "RW": "...", "FR": "..." } }
+  author        String
+  featured      Boolean   @default(false)
+  trending      Boolean   @default(false)
+  views         Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  publishedAt   DateTime?
 
   @@index([category])
   @@index([featured])

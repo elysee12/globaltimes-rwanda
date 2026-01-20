@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useNews } from "@/contexts/NewsContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocalizedArticleFieldsAsync, getLocalizedArticleFields, getTranslatedCategory } from "@/lib/localization";
-import { normalizeImageUrl, normalizeImageUrls, normalizeHtmlImageUrls } from "@/lib/image-utils";
+import { normalizeImageUrl, normalizeImageUrls, normalizeHtmlImageUrls, addImageCaptions } from "@/lib/image-utils";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,9 @@ const NewsDetail = () => {
       try {
         const translated = await getLocalizedArticleFieldsAsync(article, language);
         // Normalize image URLs in the content HTML
-        const normalizedContent = normalizeHtmlImageUrls(translated.content);
+        let normalizedContent = normalizeHtmlImageUrls(translated.content);
+        // Add captions to images
+        normalizedContent = addImageCaptions(normalizedContent, article.imageCaptions, language);
         setLocalizedArticle({
           ...translated,
           content: normalizedContent,
@@ -41,7 +43,9 @@ const NewsDetail = () => {
         // Fallback to sync version if translation fails
         const sync = getLocalizedArticleFields(article, language);
         // Normalize image URLs in the content HTML
-        const normalizedContent = normalizeHtmlImageUrls(sync.content);
+        let normalizedContent = normalizeHtmlImageUrls(sync.content);
+        // Add captions to images
+        normalizedContent = addImageCaptions(normalizedContent, article.imageCaptions, language);
         setLocalizedArticle({
           ...sync,
           content: normalizedContent,
@@ -142,7 +146,9 @@ const NewsDetail = () => {
                   [&_ol]:mb-6 [&_ol]:ml-6 [&_ol]:list-decimal [&_ol]:text-left [&_ol]:text-2xl
                   [&_li]:mb-2 [&_li]:text-2xl
                   [&_blockquote]:mb-6 [&_blockquote]:pl-4 [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:italic [&_blockquote]:text-left [&_blockquote]:text-2xl
-                  [&_img]:w-full [&_img]:max-w-full [&_img]:h-auto [&_img]:my-6 [&_img]:rounded [&_img]:object-contain"
+                  [&_img]:w-full [&_img]:max-w-full [&_img]:h-auto [&_img]:my-6 [&_img]:rounded [&_img]:object-contain
+                  [&_figure]:my-6 [&_figure]:block
+                  [&_.image-caption]:text-sm [&_.image-caption]:text-muted-foreground [&_.image-caption]:mt-2 [&_.image-caption]:text-center [&_.image-caption]:italic"
                 dangerouslySetInnerHTML={{ __html: localizedArticle.content }} 
               />
             </div>

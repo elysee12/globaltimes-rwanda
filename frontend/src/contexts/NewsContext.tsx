@@ -24,6 +24,7 @@ export interface NewsArticle {
   images?: string[]; // gallery
   videos?: string[]; // embedded videos
   video?: string; // legacy single video
+  imageCaptions?: Record<string, { EN?: string; RW?: string; FR?: string }>; // map of image URLs to captions
   date: string;
   author: string;
   featured?: boolean;
@@ -56,6 +57,7 @@ const apiToFrontend = (apiArticle: APINewsArticle): NewsArticle => {
     images,
     videos,
     video: apiArticle.video || undefined,
+    imageCaptions: apiArticle.imageCaptions,
     date: apiArticle.createdAt,
     author: apiArticle.author,
     featured: apiArticle.featured,
@@ -79,6 +81,7 @@ const frontendToAPI = (article: NewsArticle): Omit<APINewsArticle, 'id' | 'creat
   video: article.video,
   images: article.images ?? [],
   videos: article.videos ?? [],
+  imageCaptions: article.imageCaptions,
   author: article.author,
   featured: article.featured ?? false,
   trending: article.trending ?? false,

@@ -115,3 +115,51 @@ export const normalizeHtmlImageUrls = (html: string): string => {
     }
   );
 };
+
+/**
+ * Processes HTML content to add captions below images based on imageCaptions data
+ * 
+ * @param html - The HTML content string
+ * @param imageCaptions - Map of image URLs to captions: { "url": { "EN": "...", "RW": "...", "FR": "..." } }
+ * @param language - Current language code ('EN', 'RW', or 'FR')
+ * @returns HTML content with captions added below images
+ */
+export const addImageCaptions = (
+  html: string,
+  imageCaptions?: Record<string, { EN?: string; RW?: string; FR?: string }>,
+  language: 'EN' | 'RW' | 'FR' = 'EN'
+): string => {
+  if (!html || typeof html !== 'string' || !imageCaptions) {
+    return html;
+  }
+
+  // Replace img tags with img + caption
+  return html.replace(
+    /<img([^>]*)>/gi,
+    (match, attributes) => {
+      // Extract src attribute
+      const srcMatch = attributes.match(/\s+src=["']([^"']+)["']/i);
+      if (!srcMatch) {
+        return match; // Return original if no src found
+      }
+
+      const url = srcMatch[1];
+      const normalizedUrl = normalizeImageUrl(url);
+      
+      // Find matching caption (try normalized URL first, then original)
+      let caption: string | undefined;
+      const captionData = imageCaptions[normalizedUrl] || imageCaptions[url];
+      if (captionData) {
+        caption = captionData[language] || captionData.EN || captionData.RW || captionData.FR;
+      }
+
+      // If no caption found, return original img tag
+      if (!caption) {
+        return match;
+      }
+
+      // Return img tag wrapped with figure and figcaption
+      return `<figure class="image-with-caption">${match}<figcaption class="image-caption text-sm text-muted-foreground mt-2 text-center italic">${caption}</figcaption></figure>`;
+    }
+  );
+};

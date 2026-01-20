@@ -17,6 +17,7 @@ export interface NewsArticle {
   images?: string[]; // gallery
   videos?: string[]; // embedded videos
   video?: string; // legacy single video
+  imageCaptions?: Record<string, { EN?: string; RW?: string; FR?: string }>; // map of image URLs to captions
   author: string;
   featured: boolean;
   trending: boolean;

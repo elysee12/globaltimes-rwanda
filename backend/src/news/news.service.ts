@@ -49,6 +49,9 @@ export class CreateNewsDto {
   @IsArray()
   videos?: string[];
 
+  @IsOptional()
+  imageCaptions?: Record<string, { EN?: string; RW?: string; FR?: string }>;
+
   @IsString()
   author: string;
 
@@ -136,12 +139,13 @@ export class NewsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createNewsDto: CreateNewsDto) {
-    const { images, videos, ...rest } = createNewsDto as any;
+    const { images, videos, imageCaptions, ...rest } = createNewsDto as any;
     return this.prisma.news.create({
       data: {
         ...rest,
         images: images ?? [],
         videos: videos ?? [],
+        imageCaptions: imageCaptions ?? {},
         featured: createNewsDto.featured ?? false,
         trending: createNewsDto.trending ?? false,
         publishedAt: new Date(),
@@ -200,7 +204,7 @@ export class NewsService {
       throw new NotFoundException(`News with ID ${id} not found`);
     }
 
-    const { images, videos, ...rest } = updateNewsDto as any;
+    const { images, videos, imageCaptions, ...rest } = updateNewsDto as any;
 
     return this.prisma.news.update({
       where: { id },
@@ -208,6 +212,7 @@ export class NewsService {
         ...rest,
         ...(images !== undefined ? { images } : {}),
         ...(videos !== undefined ? { videos } : {}),
+        ...(imageCaptions !== undefined ? { imageCaptions } : {}),
       },
     });
   }

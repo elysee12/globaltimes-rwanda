@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ArrowLeft, Save, Trash2, Edit, Upload, Languages, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { uploadAPI } from "@/lib/api";
@@ -37,6 +38,7 @@ const ManageNews = () => {
     images: [] as string[],
     videos: [] as string[],
     video: "",
+    imageCaptions: {} as Record<string, { EN?: string; RW?: string; FR?: string }>,
     author: "Admin",
     featured: false,
     trending: false,
@@ -55,6 +57,9 @@ const ManageNews = () => {
   const insertVideoInputRef = useRef<HTMLInputElement>(null);
   const [insertTargetLanguage, setInsertTargetLanguage] = useState<'EN' | 'RW' | 'FR' | null>(null);
   const [insertType, setInsertType] = useState<'image' | 'video' | null>(null);
+  const [captionDialogOpen, setCaptionDialogOpen] = useState(false);
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+  const [captionInputs, setCaptionInputs] = useState({ EN: "", RW: "", FR: "" });
 
   const languageLabels: Record<'EN' | 'RW' | 'FR', string> = {
     EN: "English",
@@ -146,6 +151,7 @@ const ManageNews = () => {
         images: galleryUrls,
         videos: videosArr,
         video: videoUrl,
+        imageCaptions: formData.imageCaptions,
         date: new Date().toISOString(),
         author: formData.author,
         featured: formData.featured,
@@ -173,7 +179,7 @@ const ManageNews = () => {
       titleEN: "", titleRW: "", titleFR: "",
       excerptEN: "", excerptRW: "", excerptFR: "",
       contentEN: "", contentRW: "", contentFR: "",
-      category: "Politics", image: "", images: [], videos: [], video: "", author: "Admin", featured: false, trending: false
+      category: "Politics", image: "", images: [], videos: [], video: "", imageCaptions: {}, author: "Admin", featured: false, trending: false
     });
     setEditingId(null);
     setSelectedImageFiles([]);
@@ -195,15 +201,16 @@ const ManageNews = () => {
         contentEN: article.content.EN,
         contentRW: article.content.RW,
         contentFR: article.content.FR,
-        category: article.category,
-        image: article.image || "",
-        images: article.images || [],
-        videos: article.videos || [],
-        video: article.video || "",
-        author: article.author,
-        featured: article.featured || false,
-        trending: article.trending || false
-      });
+      category: article.category,
+      image: article.image || "",
+      images: article.images || [],
+      videos: article.videos || [],
+      video: article.video || "",
+      imageCaptions: article.imageCaptions || {},
+      author: article.author,
+      featured: article.featured || false,
+      trending: article.trending || false
+    });
       setEditingId(id);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -480,18 +487,15 @@ const ManageNews = () => {
                 try {
                   setIsUploading(true);
                   const uploaded = await uploadAPI.uploadFile(file);
-                  const tag = `<img src="${uploaded.url}" alt="" />`;
-                  if (insertTargetLanguage === 'EN') setFormData(prev => ({ ...prev, contentEN: `${prev.contentEN}\n${tag}` }));
-                  if (insertTargetLanguage === 'RW') setFormData(prev => ({ ...prev, contentRW: `${prev.contentRW}\n${tag}` }));
-                  if (insertTargetLanguage === 'FR') setFormData(prev => ({ ...prev, contentFR: `${prev.contentFR}\n${tag}` }));
-                  toast.success('Image inserted into content');
+                  // Store the uploaded URL and open caption dialog
+                  setPendingImageUrl(uploaded.url);
+                  setCaptionInputs({ EN: "", RW: "", FR: "" });
+                  setCaptionDialogOpen(true);
                 } catch {
                   toast.error('Failed to upload image');
                 } finally {
                   setIsUploading(false);
                   if (insertImageInputRef.current) insertImageInputRef.current.value = '';
-                  setInsertTargetLanguage(null);
-                  setInsertType(null);
                 }
               }} />
               <input ref={insertVideoInputRef} type="file" accept="video/*" className="hidden" onChange={async (e) => {
@@ -518,6 +522,95 @@ const ManageNews = () => {
               </form>
             </CardContent>
           </Card>
+
+          {/* Caption Dialog */}
+          <Dialog open={captionDialogOpen} onOpenChange={setCaptionDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Image Caption</DialogTitle>
+                <DialogDescription>
+                  Enter captions for this image in all three languages. Captions will be displayed below the image.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label>English Caption</Label>
+                  <Input
+                    value={captionInputs.EN}
+                    onChange={(e) => setCaptionInputs(prev => ({ ...prev, EN: e.target.value }))}
+                    placeholder="Enter caption in English"
+                  />
+                </div>
+                <div>
+                  <Label>Kinyarwanda Caption</Label>
+                  <Input
+                    value={captionInputs.RW}
+                    onChange={(e) => setCaptionInputs(prev => ({ ...prev, RW: e.target.value }))}
+                    placeholder="Andika caption mu Kinyarwanda"
+                  />
+                </div>
+                <div>
+                  <Label>French Caption</Label>
+                  <Input
+                    value={captionInputs.FR}
+                    onChange={(e) => setCaptionInputs(prev => ({ ...prev, FR: e.target.value }))}
+                    placeholder="Entrez la légende en français"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => {
+                  setCaptionDialogOpen(false);
+                  setPendingImageUrl(null);
+                  setCaptionInputs({ EN: "", RW: "", FR: "" });
+                  setInsertTargetLanguage(null);
+                  setInsertType(null);
+                }}>
+                  Skip
+                </Button>
+                <Button onClick={() => {
+                  if (!pendingImageUrl || !insertTargetLanguage) return;
+                  
+                  // Store captions
+                  const captions: { EN?: string; RW?: string; FR?: string } = {};
+                  if (captionInputs.EN.trim()) captions.EN = captionInputs.EN.trim();
+                  if (captionInputs.RW.trim()) captions.RW = captionInputs.RW.trim();
+                  if (captionInputs.FR.trim()) captions.FR = captionInputs.FR.trim();
+                  
+                  if (Object.keys(captions).length > 0) {
+                    setFormData(prev => ({
+                      ...prev,
+                      imageCaptions: {
+                        ...prev.imageCaptions,
+                        [pendingImageUrl]: captions
+                      }
+                    }));
+                  }
+                  
+                  // Insert image tag
+                  const tag = `<img src="${pendingImageUrl}" alt="" />`;
+                  if (insertTargetLanguage === 'EN') {
+                    setFormData(prev => ({ ...prev, contentEN: `${prev.contentEN}\n${tag}` }));
+                  }
+                  if (insertTargetLanguage === 'RW') {
+                    setFormData(prev => ({ ...prev, contentRW: `${prev.contentRW}\n${tag}` }));
+                  }
+                  if (insertTargetLanguage === 'FR') {
+                    setFormData(prev => ({ ...prev, contentFR: `${prev.contentFR}\n${tag}` }));
+                  }
+                  
+                  toast.success('Image inserted into content');
+                  setCaptionDialogOpen(false);
+                  setPendingImageUrl(null);
+                  setCaptionInputs({ EN: "", RW: "", FR: "" });
+                  setInsertTargetLanguage(null);
+                  setInsertType(null);
+                }}>
+                  Insert Image
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <Card>
             <CardHeader>
