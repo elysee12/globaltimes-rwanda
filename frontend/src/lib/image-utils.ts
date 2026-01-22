@@ -57,6 +57,82 @@ export const normalizeImageUrls = (urls: (string | undefined | null)[]): string[
 };
 
 /**
+ * Converts plain text with line breaks to HTML paragraphs
+ * Double line breaks create new paragraphs, single line breaks create <br> tags
+ * Also handles content that has HTML tags but missing paragraph tags
+ * 
+ * @param text - The text content (may contain line breaks or HTML)
+ * @returns HTML content with proper paragraph tags
+ */
+export const convertTextToParagraphs = (text: string): string => {
+  if (!text || typeof text !== 'string') {
+    return text;
+  }
+
+  // Check if content already has paragraph tags
+  if (/<p[\s>]/i.test(text)) {
+    // Already has paragraphs, return as is
+    return text;
+  }
+
+  // Check if content has other HTML tags (like img, video, etc.)
+  const hasHtmlTags = /<[a-z][\s\S]*>/i.test(text);
+  
+  if (hasHtmlTags) {
+    // Content has HTML tags but no paragraphs - wrap text blocks in paragraphs
+    // Split by double line breaks or HTML tags
+    const parts = text.split(/(\n\s*\n|<(?:img|video|iframe|figure)[^>]*>)/i);
+    let result = '';
+    let currentParagraph = '';
+    
+    for (const part of parts) {
+      if (/<(?:img|video|iframe|figure)[^>]*>/i.test(part)) {
+        // If we have accumulated text, wrap it in a paragraph
+        if (currentParagraph.trim()) {
+          result += `<p>${currentParagraph.trim().replace(/\n/g, '<br>')}</p>`;
+          currentParagraph = '';
+        }
+        // Add the HTML tag as-is
+        result += part;
+      } else if (/^\n\s*\n$/.test(part)) {
+        // Double line break - end current paragraph and start new one
+        if (currentParagraph.trim()) {
+          result += `<p>${currentParagraph.trim().replace(/\n/g, '<br>')}</p>`;
+          currentParagraph = '';
+        }
+      } else {
+        // Regular text - add to current paragraph
+        currentParagraph += part;
+      }
+    }
+    
+    // Add any remaining text as a paragraph
+    if (currentParagraph.trim()) {
+      result += `<p>${currentParagraph.trim().replace(/\n/g, '<br>')}</p>`;
+    }
+    
+    return result || text;
+  }
+
+  // Plain text - split by double line breaks (paragraph breaks)
+  const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+  
+  if (paragraphs.length === 0) {
+    // No double line breaks, treat entire text as one paragraph
+    return `<p>${text.trim().replace(/\n/g, '<br>')}</p>`;
+  }
+  
+  // Wrap each paragraph in <p> tags and convert single line breaks to <br>
+  return paragraphs
+    .map(para => {
+      // Replace single line breaks with <br> tags
+      const withBreaks = para.trim().replace(/\n/g, '<br>');
+      return `<p>${withBreaks}</p>`;
+    })
+    .join('');
+};
+
+/**
  * Processes HTML content to normalize all image src attributes
  * This ensures images embedded in HTML content (like contentRW) use absolute URLs
  * Also adds styling to make images smaller and responsive
