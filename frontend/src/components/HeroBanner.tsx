@@ -84,7 +84,7 @@ const HeroBanner = () => {
                 <img
                   src={normalizeImageUrl(featured.image)}
                   alt={translatedHeroNews.get(String(featured.id))?.title || ''}
-                  className="h-full w-full object-cover bg-black"
+                  className="h-full w-full object-cover object-top"
                 />
                 <div className="absolute inset-0 pointer-events-none rounded-lg ring-1 ring-white/10" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
@@ -118,7 +118,7 @@ const HeroBanner = () => {
                     <img
                       src={normalizeImageUrl(item.image)}
                       alt={translatedHeroNews.get(String(item.id))?.title || ''}
-                      className="h-full w-full object-cover bg-black"
+                      className="h-full w-full object-cover object-top"
                     />
                   </div>
                   <div className="min-w-0">

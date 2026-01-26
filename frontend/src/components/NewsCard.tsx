@@ -28,7 +28,7 @@ const NewsCard = ({ id, title, excerpt, category, image, date, featured = false,
           <img
             src={normalizeImageUrl(image)}
             alt={title}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500"
           />
           <div className="absolute top-4 left-4">
             <span className="px-3 py-1 bg-news-red text-white text-xs font-bold rounded">
