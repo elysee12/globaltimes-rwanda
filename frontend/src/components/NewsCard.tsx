@@ -3,25 +3,40 @@ import { Clock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getTranslatedCategory } from "@/lib/localization";
 import { normalizeImageUrl } from "@/lib/image-utils";
+import { newsPath } from "@/lib/slug";
+import { formatRelativeDate } from "@/lib/date-utils";
 
 interface NewsCardProps {
-  id: string;
+  id: number;
+  slug?: string;
   title: string;
   excerpt: string;
   category: string;
   image: string;
   date: string;
   featured?: boolean;
-  showExcerpt?: boolean; // Control whether to show excerpt (default: true for non-featured cards on category pages)
+  showExcerpt?: boolean;
 }
 
-const NewsCard = ({ id, title, excerpt, category, image, date, featured = false, showExcerpt = true }: NewsCardProps) => {
-  const { t, language } = useLanguage();
+const NewsCard = ({
+  id,
+  slug,
+  title,
+  excerpt,
+  category,
+  image,
+  date,
+  featured = false,
+  showExcerpt = true,
+}: NewsCardProps) => {
+  const { t } = useLanguage();
   const translatedCategory = getTranslatedCategory(category, t);
+  const to = newsPath(slug, id);
+  const formattedDate = formatRelativeDate(date);
   if (featured) {
     return (
       <Link
-        to={`/news/${id}`}
+        to={to}
         className="group block bg-card rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 animate-scale-in"
       >
         <div className="relative h-72 overflow-hidden">
@@ -43,7 +58,7 @@ const NewsCard = ({ id, title, excerpt, category, image, date, featured = false,
           <p className="text-muted-foreground mb-4 line-clamp-2">{excerpt}</p>
           <div className="flex items-center text-sm text-muted-foreground">
             <Clock className="h-4 w-4 mr-1" />
-            {date}
+            {formattedDate}
           </div>
         </div>
       </Link>
@@ -52,7 +67,7 @@ const NewsCard = ({ id, title, excerpt, category, image, date, featured = false,
 
   return (
     <Link
-      to={`/news/${id}`}
+      to={to}
       className="group flex gap-4 bg-card rounded-lg overflow-hidden shadow hover:shadow-md transition-all duration-300 animate-fade-in"
     >
       <div className="relative w-32 h-32 flex-shrink-0 overflow-hidden rounded-lg">
@@ -76,7 +91,7 @@ const NewsCard = ({ id, title, excerpt, category, image, date, featured = false,
         )}
         <div className="flex items-center text-xs text-muted-foreground">
           <Clock className="h-3 w-3 mr-1" />
-          {date}
+          {formattedDate}
         </div>
       </div>
     </Link>

@@ -41,6 +41,9 @@ model Session {
 
 model News {
   id            Int       @id @default(autoincrement())
+  // SEO-friendly URL slug generated from titleEN, e.g. "government-announces-new-education-policy-42"
+  // The numeric ID is always appended to guarantee uniqueness.
+  slug          String    @unique
   titleEN       String
   titleRW       String
   titleFR       String
@@ -64,6 +67,7 @@ model News {
   updatedAt     DateTime  @updatedAt
   publishedAt   DateTime?
 
+  @@index([slug])
   @@index([category])
   @@index([featured])
   @@index([trending])

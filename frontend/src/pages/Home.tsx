@@ -11,6 +11,7 @@ import { useNews } from "@/contexts/NewsContext";
 import { getLocalizedArticleFieldsAsync } from "@/lib/localization";
 import { announcementsAPI, Announcement } from "@/lib/api";
 import { TranslatedText } from "@/components/TranslatedContent";
+import { newsPath } from "@/lib/slug";
 
 const Home = () => {
   const { t, language } = useLanguage();
@@ -77,6 +78,7 @@ const Home = () => {
       const translated = translatedData.get(article.id);
       return {
         id: article.id,
+        slug: article.slug,
         title: translated?.title || '',
         excerpt: translated?.excerpt || '',
         category: article.category,
@@ -92,6 +94,7 @@ const Home = () => {
       const translated = translatedData.get(article.id);
       return {
         id: article.id,
+        slug: article.slug,
         title: translated?.title || '',
         excerpt: translated?.excerpt || '',
         category: article.category,
@@ -250,7 +253,7 @@ const Home = () => {
                           {i + 1}
                         </span>
                         <Link
-                          to={`/news/${news.id}`}
+                          to={newsPath(news.slug, news.id)}
                           className="text-sm hover:text-gold transition-colors line-clamp-2"
                         >
                           {news.title}

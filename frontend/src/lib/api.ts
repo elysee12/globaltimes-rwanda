@@ -3,6 +3,8 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 // Types
 export interface NewsArticle {
   id: number;
+  /** SEO-friendly URL slug, e.g. "government-announces-new-education-policy-42" */
+  slug: string;
   titleEN: string;
   titleRW: string;
   titleFR: string;
@@ -383,6 +385,11 @@ export const newsAPI = {
 
   getById: async (id: number): Promise<NewsArticle> => {
     const response = await fetchWithAuth(`/news/${id}`);
+    return response.json();
+  },
+
+  getBySlug: async (slug: string): Promise<NewsArticle> => {
+    const response = await fetchWithAuth(`/news/slug/${encodeURIComponent(slug)}`);
     return response.json();
   },
 

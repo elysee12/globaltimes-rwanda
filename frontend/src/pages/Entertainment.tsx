@@ -39,6 +39,7 @@ const Entertainment = () => {
       const translated = translatedData.get(article.id);
       return {
         id: article.id,
+        slug: article.slug,
         title: translated?.title || '',
         excerpt: translated?.excerpt || '',
         category: article.category,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Globe, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
@@ -20,6 +20,26 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
+
+  // Live clock — updates every second
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formattedDate = now.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  const formattedTime = now.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
 
   const categories = [
     { name: t("nav.home"), path: "/" },
@@ -134,6 +154,16 @@ const Navbar = () => {
                 <img src={whatsappIcon} alt="WhatsApp" className="h-5 w-5 object-contain" />
               </a>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Date / Time bar */}
+      <div className="bg-navy/95 border-t border-white/10">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between py-1.5 text-xs text-white/70">
+            <span className="tracking-wide">{formattedDate}</span>
+            <span className="font-mono tabular-nums tracking-widest text-gold/90">{formattedTime}</span>
           </div>
         </div>
       </div>

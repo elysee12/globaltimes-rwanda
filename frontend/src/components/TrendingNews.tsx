@@ -3,6 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNews } from "@/contexts/NewsContext";
 import { Link } from "react-router-dom";
 import { TranslatedText } from "@/components/TranslatedContent";
+import { newsPath } from "@/lib/slug";
 
 const TrendingNews = () => {
   const { t, language } = useLanguage();
@@ -35,7 +36,7 @@ const TrendingNews = () => {
                     return (
                       <Link
                         key={article.id}
-                        to={`/news/${article.id}`}
+                        to={newsPath(article.slug, article.id)}
                         className="inline-block mx-8 hover:text-gold transition-colors"
                       >
                         •{" "}

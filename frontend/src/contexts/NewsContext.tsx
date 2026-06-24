@@ -4,6 +4,8 @@ import { newsAPI, NewsArticle as APINewsArticle } from '@/lib/api';
 // Frontend-friendly format with nested language objects
 export interface NewsArticle {
   id: number;
+  /** SEO-friendly URL slug from the backend */
+  slug: string;
   title: {
     EN: string;
     RW: string;
@@ -37,6 +39,7 @@ const apiToFrontend = (apiArticle: APINewsArticle): NewsArticle => {
   const videos = Array.isArray((apiArticle as any).videos) ? (apiArticle as any).videos as string[] : [];
   return {
     id: apiArticle.id,
+    slug: apiArticle.slug || `article-${apiArticle.id}`,
     title: {
       EN: apiArticle.titleEN,
       RW: apiArticle.titleRW,
@@ -95,6 +98,7 @@ interface NewsContextType {
   updateArticle: (id: number, article: NewsArticle) => Promise<void>;
   deleteArticle: (id: number) => Promise<void>;
   getArticleById: (id: number) => NewsArticle | undefined;
+  getArticleBySlug: (slug: string) => NewsArticle | undefined;
   getArticlesByCategory: (category: string) => NewsArticle[];
   getFeaturedArticles: () => NewsArticle[];
   getTrendingArticles: () => NewsArticle[];
@@ -165,6 +169,20 @@ export const NewsProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return articles.find(a => a.id === id);
   };
 
+  const getArticleBySlug = (slug: string) => {
+    // First: exact slug match
+    const exact = articles.find(a => a.slug === slug);
+    if (exact) return exact;
+    // Fallback: the slug may be a bare numeric ID (old-style URLs)
+    const numId = parseInt(slug, 10);
+    if (!isNaN(numId)) return articles.find(a => a.id === numId);
+    // Fallback: the slug ends with "-<id>" — extract the id
+    const parts = slug.split('-');
+    const lastNum = parseInt(parts[parts.length - 1], 10);
+    if (!isNaN(lastNum)) return articles.find(a => a.id === lastNum);
+    return undefined;
+  };
+
   const getArticlesByCategory = (category: string) => {
     return articles.filter(a => a.category.toLowerCase() === category.toLowerCase());
   };
@@ -186,6 +204,7 @@ export const NewsProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updateArticle,
       deleteArticle,
       getArticleById,
+      getArticleBySlug,
       getArticlesByCategory,
       getFeaturedArticles,
       getTrendingArticles,

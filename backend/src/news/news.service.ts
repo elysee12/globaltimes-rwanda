@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
+import { generateNewsSlug, extractIdFromSlug } from '../utils/slug.util';
+
+// ---------------------------------------------------------------------------
+// DTOs
+// ---------------------------------------------------------------------------
 
 export class CreateNewsDto {
   @IsString()
@@ -69,7 +74,7 @@ export class UpdateNewsDto {
   @IsString()
   titleEN?: string;
 
-   @IsOptional()
+  @IsOptional()
   @IsString()
   titleRW?: string;
 
@@ -137,15 +142,26 @@ export class UpdateNewsDto {
   trending?: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// Service
+// ---------------------------------------------------------------------------
+
 @Injectable()
 export class NewsService {
   constructor(private prisma: PrismaService) {}
 
+  // ---- Create ----------------------------------------------------------------
+
   async create(createNewsDto: CreateNewsDto) {
     const { images, videos, imageCaptions, ...rest } = createNewsDto as any;
-    return this.prisma.news.create({
+
+    // Create the record first so we have the auto-generated ID, then immediately
+    // update the slug to include that ID (guarantees uniqueness).
+    const news = await this.prisma.news.create({
       data: {
         ...rest,
+        // Temporary placeholder slug — overwritten right below.
+        slug: `pending-${Date.now()}`,
         images: images ?? [],
         videos: videos ?? [],
         imageCaptions: imageCaptions ?? {},
@@ -154,15 +170,29 @@ export class NewsService {
         publishedAt: new Date(),
       },
     });
+
+    // Now that we have the real ID, generate the proper slug and persist it.
+    const slug = generateNewsSlug(createNewsDto.titleEN, news.id);
+    return this.prisma.news.update({
+      where: { id: news.id },
+      data: { slug },
+    });
   }
 
-  async findAll(filters?: { category?: string; featured?: boolean; limit?: number; offset?: number }) {
+  // ---- Read (list) -----------------------------------------------------------
+
+  async findAll(filters?: {
+    category?: string;
+    featured?: boolean;
+    limit?: number;
+    offset?: number;
+  }) {
     const where: any = {};
-    
+
     if (filters?.category) {
       where.category = filters.category;
     }
-    
+
     if (filters?.featured !== undefined) {
       where.featured = filters.featured;
     }
@@ -180,16 +210,16 @@ export class NewsService {
     return { data, total };
   }
 
+  // ---- Read (single by numeric ID) ------------------------------------------
+
   async findOne(id: number) {
-    const news = await this.prisma.news.findUnique({
-      where: { id },
-    });
+    const news = await this.prisma.news.findUnique({ where: { id } });
 
     if (!news) {
       throw new NotFoundException(`News with ID ${id} not found`);
     }
 
-    // Increment views
+    // Increment view counter
     await this.prisma.news.update({
       where: { id },
       data: { views: { increment: 1 } },
@@ -198,10 +228,46 @@ export class NewsService {
     return news;
   }
 
-  async update(id: number, updateNewsDto: UpdateNewsDto) {
-    const news = await this.prisma.news.findUnique({
-      where: { id },
+  // ---- Read (single by slug OR numeric ID string) ---------------------------
+  //
+  // This is the primary lookup used by the public-facing article page and the
+  // social-preview endpoint.  It accepts:
+  //   - A full slug like "government-announces-policy-42"
+  //   - A pure numeric string like "42" (backward compat with old URLs)
+  //
+  // The slug always ends with "-<id>" so we first try an exact slug match; if
+  // that fails we fall back to extracting the trailing ID and querying by that.
+
+  async findBySlug(slug: string) {
+    // 1. Try exact slug match (fastest path for new URLs)
+    let news = await this.prisma.news.findUnique({ where: { slug } });
+
+    // 2. Fall back: extract ID from slug tail (handles old /news/42 style URLs
+    //    and any slug whose DB record was written before slugs were introduced)
+    if (!news) {
+      const id = extractIdFromSlug(slug);
+      if (!isNaN(id)) {
+        news = await this.prisma.news.findUnique({ where: { id } });
+      }
+    }
+
+    if (!news) {
+      throw new NotFoundException(`News not found: ${slug}`);
+    }
+
+    // Increment view counter
+    await this.prisma.news.update({
+      where: { id: news.id },
+      data: { views: { increment: 1 } },
     });
+
+    return news;
+  }
+
+  // ---- Update ----------------------------------------------------------------
+
+  async update(id: number, updateNewsDto: UpdateNewsDto) {
+    const news = await this.prisma.news.findUnique({ where: { id } });
 
     if (!news) {
       throw new NotFoundException(`News with ID ${id} not found`);
@@ -209,10 +275,15 @@ export class NewsService {
 
     const { images, videos, imageCaptions, ...rest } = updateNewsDto as any;
 
+    // If the English title changed, regenerate the slug so the URL stays fresh.
+    const newTitle = updateNewsDto.titleEN;
+    const slugUpdate = newTitle ? { slug: generateNewsSlug(newTitle, id) } : {};
+
     return this.prisma.news.update({
       where: { id },
       data: {
         ...rest,
+        ...slugUpdate,
         ...(images !== undefined ? { images } : {}),
         ...(videos !== undefined ? { videos } : {}),
         ...(imageCaptions !== undefined ? { imageCaptions } : {}),
@@ -220,19 +291,19 @@ export class NewsService {
     });
   }
 
+  // ---- Delete ----------------------------------------------------------------
+
   async remove(id: number) {
-    const news = await this.prisma.news.findUnique({
-      where: { id },
-    });
+    const news = await this.prisma.news.findUnique({ where: { id } });
 
     if (!news) {
       throw new NotFoundException(`News with ID ${id} not found`);
     }
 
-    return this.prisma.news.delete({
-      where: { id },
-    });
+    return this.prisma.news.delete({ where: { id } });
   }
+
+  // ---- Category helpers ------------------------------------------------------
 
   async getByCategory(category: string, limit?: number) {
     return this.prisma.news.findMany({
@@ -258,4 +329,3 @@ export class NewsService {
     });
   }
 }
-

@@ -10,6 +10,7 @@ import { UploadModule } from './upload/upload.module';
 import { StatsModule } from './stats/stats.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { ContactModule } from './contact/contact.module';
+import { SocialPreviewModule } from './social-preview/social-preview.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ContactModule } from './contact/contact.module';
     StatsModule,
     AnnouncementsModule,
     ContactModule,
+    SocialPreviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],

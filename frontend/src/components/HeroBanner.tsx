@@ -5,6 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNews } from "@/contexts/NewsContext";
 import { getTranslatedCategory, getLocalizedArticleFieldsAsync } from "@/lib/localization";
 import { normalizeImageUrl } from "@/lib/image-utils";
+import { newsPath } from "@/lib/slug";
 
 const HeroBanner = () => {
   const { language, t } = useLanguage();
@@ -77,7 +78,7 @@ const HeroBanner = () => {
             if (!featured) return null;
             return (
               <Link
-                to={`/news/${featured.id}`}
+                to={newsPath(featured.slug, featured.id)}
                 className="relative w-full overflow-hidden rounded-lg bg-black lg:col-span-2"
                 style={{ height: 420 }}
               >
@@ -110,7 +111,7 @@ const HeroBanner = () => {
               const others = heroNews.filter((_, i) => i !== featuredIndex).slice(0, 4);
               return others.map((item) => (
                 <Link
-                  to={`/news/${item.id}`}
+                  to={newsPath(item.slug, item.id)}
                   key={`right-${item.id}`}
                   className="flex gap-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors p-2"
                 >
