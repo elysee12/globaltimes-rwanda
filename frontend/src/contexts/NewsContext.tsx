@@ -4,8 +4,8 @@ import { newsAPI, NewsArticle as APINewsArticle } from '@/lib/api';
 // Frontend-friendly format with nested language objects
 export interface NewsArticle {
   id: number;
-  /** SEO-friendly URL slug from the backend */
-  slug: string;
+  /** SEO-friendly URL slug from the backend — may be absent on unsaved/local objects */
+  slug?: string;
   title: {
     EN: string;
     RW: string;

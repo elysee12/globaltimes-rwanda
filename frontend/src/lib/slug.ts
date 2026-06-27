@@ -28,7 +28,7 @@ export function slugify(title: string): string {
  * @param id   - The article's numeric ID
  */
 export function articleSlug(slug: string | undefined | null, id: number): string {
-  if (slug && slug.trim() && !slug.startsWith('pending-')) {
+  if (slug && slug.trim() && !slug.startsWith('pending-') && slug !== '') {
     return slug;
   }
   return `article-${id}`;

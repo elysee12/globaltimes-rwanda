@@ -144,6 +144,7 @@ const ManageNews = () => {
       
       const article = {
         id: editingId ?? 0,
+        slug: '',   // backend generates the real slug; this is just a placeholder
         title: { EN: formData.titleEN, RW: formData.titleRW, FR: formData.titleFR },
         excerpt: { EN: formData.excerptEN, RW: formData.excerptRW, FR: formData.excerptFR },
         content: { EN: formData.contentEN, RW: formData.contentRW, FR: formData.contentFR },
@@ -163,10 +164,10 @@ const ManageNews = () => {
       console.log('ManageNews: ImageCaptions keys:', Object.keys(article.imageCaptions || {}));
 
       if (editingId !== null) {
-        updateArticle(editingId, article);
+        await updateArticle(editingId, article);
         toast.success("Article updated successfully");
       } else {
-        addArticle(article);
+        await addArticle(article);
         toast.success("Article added successfully");
       }
 

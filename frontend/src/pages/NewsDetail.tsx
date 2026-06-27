@@ -26,7 +26,7 @@ const NewsDetail = () => {
   // legacy bare numeric strings like "42" for backward compatibility.
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { getArticleBySlug } = useNews();
+  const { getArticleBySlug, loading: articlesLoading } = useNews();
   const { language, t } = useLanguage();
   const [localizedArticle, setLocalizedArticle] = useState<{
     title: string;
@@ -87,15 +87,23 @@ const NewsDetail = () => {
   }, [article, language]);
 
   // ── Loading / not-found state ────────────────────────────────────────────
-  if (!article || !localizedArticle) {
+  if (articlesLoading || !article || !localizedArticle) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1 bg-background flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold mb-4">{t("newsDetail.notFound")}</h1>
-            <Button onClick={() => navigate("/")}>{t("newsDetail.backHome")}</Button>
-          </div>
+          {articlesLoading ? (
+            // Still fetching articles — show a spinner, not "not found"
+            <div className="text-center space-y-4">
+              <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              <p className="text-muted-foreground text-sm">Loading article…</p>
+            </div>
+          ) : (
+            <div className="text-center">
+              <h1 className="text-4xl font-bold mb-4">{t("newsDetail.notFound")}</h1>
+              <Button onClick={() => navigate("/")}>{t("newsDetail.backHome")}</Button>
+            </div>
+          )}
         </main>
         <Footer />
       </div>
